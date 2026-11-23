@@ -1,0 +1,20 @@
+{
+  "name": "api-wompi-pagos",
+  "version": "0.1.0",
+  "description": "Envoltura de la API de Wompi: sesiones de pago, verificacion de webhooks, devoluciones idempotentes y consulta de transacciones.",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "wompi",
+    "pagos",
+    "webhooks",
+    "colombia"
+  ],
+  "license": "MIT"
+}

@@ -31,8 +31,11 @@ echo "$SALIDA"
 
 # Node 24 reporta el resumen con dos formatos: '# pass N' en el reporter TAP
 # y 'ℹ pass N' en el reporter por defecto. Se acepta cualquiera de los dos.
-PASARON="$(printf '%s\n' "$SALIDA" | grep -E '^[^[:alpha:]]*pass [0-9]+' | tail -1 | grep -oE '[0-9]+' | head -1)"
-FALLARON="$(printf '%s\n' "$SALIDA" | grep -E '^[^[:alpha:]]*fail [0-9]+' | tail -1 | grep -oE '[0-9]+' | head -1)"
+# El caracter 'ℹ' es multibyte: bajo un locale C.UTF-8 el rango [^[:alpha:]] deja
+# de cubrirlo y la linea no coincide. Se fija LC_ALL=C solo para estas dos
+# lecturas, que trabajan sobre bytes ASCII y numeros.
+PASARON="$(printf '%s\n' "$SALIDA" | LC_ALL=C grep -E '^[^0-9]*pass [0-9]+' | tail -1 | LC_ALL=C grep -oE '[0-9]+' | head -1)"
+FALLARON="$(printf '%s\n' "$SALIDA" | LC_ALL=C grep -E '^[^0-9]*fail [0-9]+' | tail -1 | LC_ALL=C grep -oE '[0-9]+' | head -1)"
 
 if [ -z "$PASARON" ]; then
   echo "ERROR: no se pudo leer el resumen de las pruebas." >&2
