@@ -10,4 +10,8 @@ const paquete = requerir('../package.json');
 /** Version publicada del paquete. Se lee de package.json para no duplicarla. */
 export const VERSION = paquete.version;
 
+// Cliente HTTP de la API de Wompi: timeouts por intento y reintentos con
+// espera exponencial. Es la base sobre la que se arman las operaciones.
+export { crearCliente, ErrorWompi, ENTORNOS } from './cliente.js';
+
 export default { VERSION };
