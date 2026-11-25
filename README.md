@@ -54,6 +54,36 @@ Los fallos llegan como `ErrorWompi`, con `estado`, `ruta`, `intentos` y
 `codigo` (`HTTP`, `RED`, `RESPUESTA` o `CONFIGURACION`) para decidir si vale
 la pena volver a intentar mas tarde.
 
+### Cobrar
+
+Con el mismo cliente se arman las dos formas de cobro: la sesion de pago, para
+el checkout propio, y el enlace de pago, para compartir por correo o mensajeria.
+
+```js
+import { crearSesionPago, crearEnlacePago } from 'api-wompi-pagos';
+
+const sesion = await crearSesionPago(wompi, {
+  montoEnCentavos: 250_000,          // 2500 pesos
+  referencia: 'pedido-1042',
+  correoCliente: 'cliente@ejemplo.com',
+  urlRetorno: 'https://tienda.ejemplo.com/gracias',
+});
+
+console.log(sesion.urlCheckout);      // https://checkout.wompi.co/l/ps_123
+
+const enlace = await crearEnlacePago(wompi, {
+  nombre: 'Cuota de mantenimiento',
+  montoEnCentavos: 480_000,
+  referencia: 'cuota-2026-11',
+  unSoloUso: true,
+});
+```
+
+Los montos van en centavos y las referencias son de quien cobra: sirven para
+cuadrar el pago contra el pedido. Los datos invalidos (monto, moneda,
+referencia, correo o direccion de retorno) se rechazan antes de llamar a
+Wompi, con `codigo: 'VALIDACION'`.
+
 ## Configuracion
 
 | Variable | Para que |
@@ -73,6 +103,7 @@ la pena volver a intentar mas tarde.
 ```
 src/        codigo de la aplicacion
 src/cliente.js  cliente HTTP: entornos, timeouts, reintentos
+src/pagos.js    sesiones de pago y enlaces de pago
 test(s)/    pruebas automaticas
 docs/       documentacion de uso
 ```

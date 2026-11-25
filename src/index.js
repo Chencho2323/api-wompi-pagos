@@ -14,4 +14,8 @@ export const VERSION = paquete.version;
 // espera exponencial. Es la base sobre la que se arman las operaciones.
 export { crearCliente, ErrorWompi, ENTORNOS } from './cliente.js';
 
+// Sesiones de pago y enlaces de pago: arman el cuerpo que espera Wompi y
+// devuelven una ficha con el identificador y la direccion del checkout.
+export { crearSesionPago, crearEnlacePago, URL_CHECKOUT } from './pagos.js';
+
 export default { VERSION };
