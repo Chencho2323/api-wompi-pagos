@@ -84,6 +84,36 @@ cuadrar el pago contra el pedido. Los datos invalidos (monto, moneda,
 referencia, correo o direccion de retorno) se rechazan antes de llamar a
 Wompi, con `codigo: 'VALIDACION'`.
 
+### Confirmar un pago con el webhook
+
+El aviso de Wompi llega por HTTP y hay que verificar la firma antes de tocar
+nada. Un evento sin firma buena, o con mas de cinco minutos de viejo, se
+descarta y se responde 400.
+
+```js
+import { verificarFirmaEvento } from 'api-wompi-pagos';
+
+try {
+  const evento = verificarFirmaEvento(cuerpoCrudo, {
+    secretoEventos: process.env.WOMPI_EVENTOS,
+    cabeceras: peticion.headers,
+  });
+
+  if (evento.transaccion.estado === 'APPROVED') {
+    // marcar el pedido como pagado y responder 200
+  }
+} catch (error) {
+  if (error.codigo === 'FIRMA') return responder(400, 'firma invalida');
+  throw error;
+}
+```
+
+La cadena firmada se arma con los campos que declara el propio evento en
+`signature.properties`, el `timestamp` y el secreto de eventos. La comparacion
+es en tiempo constante, y se acepta el checksum tanto en la cabecera
+`X-Event-Checksum` como en `signature.checksum`. La ventana de tiempo se ajusta
+con `toleranciaSegundos` (300 por defecto, 0 para desactivarla).
+
 ## Configuracion
 
 | Variable | Para que |
@@ -104,6 +134,7 @@ Wompi, con `codigo: 'VALIDACION'`.
 src/        codigo de la aplicacion
 src/cliente.js  cliente HTTP: entornos, timeouts, reintentos
 src/pagos.js    sesiones de pago y enlaces de pago
+src/webhooks.js verificacion de la firma de los eventos
 test(s)/    pruebas automaticas
 docs/       documentacion de uso
 ```

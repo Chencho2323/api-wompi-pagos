@@ -18,4 +18,13 @@ export { crearCliente, ErrorWompi, ENTORNOS } from './cliente.js';
 // devuelven una ficha con el identificador y la direccion del checkout.
 export { crearSesionPago, crearEnlacePago, URL_CHECKOUT } from './pagos.js';
 
+// Verificacion de la firma de los webhooks: nada se da por pagado si el evento
+// no viene firmado con el secreto del comercio y dentro de la ventana de tiempo.
+export {
+  verificarFirmaEvento,
+  calcularFirma,
+  CABECERA_CHECKSUM,
+  TOLERANCIA_SEGUNDOS,
+} from './webhooks.js';
+
 export default { VERSION };
