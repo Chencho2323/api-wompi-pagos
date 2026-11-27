@@ -28,3 +28,14 @@ export {
 } from './webhooks.js';
 
 export default { VERSION };
+
+// Registro e idempotencia: un evento aplicado una sola vez y una devolucion
+// pedida una sola vez, aunque Wompi reintente el aviso o el usuario apriete dos
+// veces el boton.
+export { abrirRegistro } from './registro.js';
+export {
+  claveDeEvento,
+  procesarEvento,
+  solicitarDevolucion,
+  saldoDevolvible,
+} from './idempotencia.js';

@@ -114,6 +114,58 @@ es en tiempo constante, y se acepta el checksum tanto en la cabecera
 `X-Event-Checksum` como en `signature.checksum`. La ventana de tiempo se ajusta
 con `toleranciaSegundos` (300 por defecto, 0 para desactivarla).
 
+### Aplicar el evento una sola vez
+
+Wompi reintenta el webhook si la respuesta tarda, asi que el mismo aviso llega
+varias veces. El registro guarda la llave del evento aplicado y el segundo
+intento no vuelve a tocar el pedido.
+
+```js
+import { abrirRegistro, procesarEvento } from 'api-wompi-pagos';
+
+const registro = abrirRegistro({ archivo: 'datos/pagos.db' });
+
+const resultado = await procesarEvento(evento, {
+  registro,
+  manejador: async (aviso) => {
+    // marcar el pedido como pagado, avisar al cliente, etc.
+  },
+});
+
+// resultado.duplicado === true en el reintento: ya se respondio 200 antes.
+```
+
+Si el manejador falla, la marca se suelta y el reintento de Wompi si aplica el
+evento. Un trabajo que no quedo hecho no puede quedar marcado como hecho.
+
+### Devoluciones
+
+La referencia es la llave. Dos clics en el boton producen una sola llamada a
+Wompi y la misma ficha de vuelta.
+
+```js
+import { solicitarDevolucion } from 'api-wompi-pagos';
+
+const devolucion = await solicitarDevolucion(wompi, registro, {
+  transaccion: '1234-5678-9012',
+  montoEnCentavos: 250_000,
+  referencia: 'devolucion-pedido-1042',
+  motivo: 'el cliente devolvio el producto',
+  montoOriginalEnCentavos: 250_000, // opcional: corta el exceso antes de llamar
+});
+
+// devolucion.duplicado === true si ya se habia pedido con esa referencia.
+```
+
+Estados que se guardan: `PENDIENTE` mientras sale la peticion, el estado que
+devuelva Wompi, `FALLIDA` cuando la rechaza (se puede reintentar con la misma
+referencia) e `INDETERMINADA` cuando el fallo fue de red o 5xx. Esa ultima no
+se reintenta sola: la peticion pudo haber llegado y repetirla devolveria la
+plata dos veces. Hay que mirarla en el panel de Wompi primero.
+
+`saldoDevolvible(registro, transaccion, montoOriginalEnCentavos)` dice cuanto
+queda por devolver de un pago con varias devoluciones parciales.
+
 ## Configuracion
 
 | Variable | Para que |
@@ -132,9 +184,11 @@ con `toleranciaSegundos` (300 por defecto, 0 para desactivarla).
 
 ```
 src/        codigo de la aplicacion
-src/cliente.js  cliente HTTP: entornos, timeouts, reintentos
-src/pagos.js    sesiones de pago y enlaces de pago
-src/webhooks.js verificacion de la firma de los eventos
+src/cliente.js      cliente HTTP: entornos, timeouts, reintentos
+src/pagos.js        sesiones de pago y enlaces de pago
+src/webhooks.js     verificacion de la firma de los eventos
+src/registro.js     registro SQLite de eventos aplicados y devoluciones
+src/idempotencia.js eventos y devoluciones que no se repiten
 test(s)/    pruebas automaticas
 docs/       documentacion de uso
 ```
