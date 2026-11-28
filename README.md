@@ -1,6 +1,6 @@
 # API de pagos con Wompi
 
-Envoltura tipada de la API de Wompi: crea sesiones de pago, valida la firma de los webhooks, procesa la devolucion con idempotencia y expone el estado de la transaccion.
+Envoltura tipada de la API de Wompi: crea sesiones de pago, valida la firma de los webhooks, procesa la devolucion con idempotencia y expone el estado de la transaccion por HTTP.
 
 ![CI](https://github.com/Chencho2323/api-wompi-pagos/actions/workflows/ci.yml/badge.svg)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-03A8FA?style=flat-square)
@@ -166,6 +166,44 @@ plata dos veces. Hay que mirarla en el panel de Wompi primero.
 `saldoDevolvible(registro, transaccion, montoOriginalEnCentavos)` dice cuanto
 queda por devolver de un pago con varias devoluciones parciales.
 
+### El flujo completo por HTTP
+
+`crearServidor` levanta las seis rutas del flujo con `node:http`, sin framework
+de por medio. Sirve para montar el cobro de una tienda o para tener un receptor
+de webhooks en un servidor pequeño.
+
+```js
+import { crearCliente, crearServidor, abrirRegistro } from 'api-wompi-pagos';
+
+const app = crearServidor({
+  cliente: crearCliente({ llave: process.env.WOMPI_LLAVE_PRIVADA, entorno: 'sandbox' }),
+  registro: abrirRegistro({ archivo: 'datos/pagos.db' }),
+  secretoEventos: process.env.WOMPI_EVENTOS,
+  manejador: async (evento) => {
+    if (evento.transaccion.estado === 'APPROVED') {
+      // marcar el pedido como pagado
+    }
+  },
+});
+
+const { url } = await app.escuchar(3000);
+```
+
+| Ruta | Para que |
+|---|---|
+| `POST /sesiones` | Abre una sesion de pago. Responde 201 con `id`, `estado` y `urlCheckout`. |
+| `POST /enlaces` | Crea un enlace de pago. Responde 201 con la ficha del enlace. |
+| `GET /transacciones/:id` | Estado de una transaccion, leido de Wompi. |
+| `POST /devoluciones` | Pide una devolucion. 201 la primera vez, 200 con `duplicado: true` en el reintento. |
+| `GET /devoluciones/:transaccion/saldo?montoOriginalEnCentavos=N` | Cuanto queda por devolver. |
+| `POST /webhooks/wompi` | Recibe el aviso firmado. 200 si quedo aplicado o ya estaba; 400 si la firma no sirve; 500 si el manejador fallo. |
+
+Los cuerpos van en JSON con los mismos nombres que las funciones de arriba. Los
+errores salen con `{ error, codigo }`: 400 para `VALIDACION` y `FIRMA`, 502
+cuando el fallo viene de Wompi y 500 cuando el problema es del servidor. El
+webhook se verifica sobre el cuerpo crudo, sin volver a serializar, y una entrega
+repetida no vuelve a llamar al manejador.
+
 ## Configuracion
 
 | Variable | Para que |
@@ -189,6 +227,7 @@ src/pagos.js        sesiones de pago y enlaces de pago
 src/webhooks.js     verificacion de la firma de los eventos
 src/registro.js     registro SQLite de eventos aplicados y devoluciones
 src/idempotencia.js eventos y devoluciones que no se repiten
+src/servidor.js     servidor HTTP con el flujo completo
 test(s)/    pruebas automaticas
 docs/       documentacion de uso
 ```

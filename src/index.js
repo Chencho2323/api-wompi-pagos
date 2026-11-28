@@ -27,6 +27,11 @@ export {
   TOLERANCIA_SEGUNDOS,
 } from './webhooks.js';
 
+// Servidor HTTP con el flujo completo: sesiones, enlaces, estado de la
+// transaccion, devoluciones y el webhook firmado. Es la forma corta de
+// levantar el flujo sin escribir el pegamento en cada proyecto.
+export { crearServidor, MAXIMO_BYTES } from './servidor.js';
+
 export default { VERSION };
 
 // Registro e idempotencia: un evento aplicado una sola vez y una devolucion
